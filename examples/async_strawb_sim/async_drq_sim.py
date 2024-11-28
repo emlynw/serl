@@ -13,13 +13,14 @@ import os
 
 from typing import Any, Dict, Optional
 import pickle as pkl
-import gym
+import gymnasium as gym
 from gym.wrappers.record_episode_statistics import RecordEpisodeStatistics
 
 from serl_launcher.agents.continuous.drq import DrQAgent
 from serl_launcher.common.evaluation import evaluate
 from serl_launcher.utils.timer_utils import Timer
 from serl_launcher.wrappers.chunking import ChunkingWrapper
+from serl_launcher.wrappers.wrappers import VideoRecorder
 from serl_launcher.utils.train_utils import concat_batches
 
 from agentlace.trainer import TrainerServer, TrainerClient
@@ -34,17 +35,16 @@ from serl_launcher.utils.launcher import (
 )
 from serl_launcher.wrappers.serl_obs_wrappers import SERLObsWrapper
 
-import franka_sim
-
+import gym_INB0104
 FLAGS = flags.FLAGS
 
-flags.DEFINE_string("env", "PandaPickCubeVision-v0", "Name of environment.")
+flags.DEFINE_string("env", "gym_INB0104/ReachIKDeltaStrawbHangingEnv", "Name of environment.")
 flags.DEFINE_string("agent", "drq", "Name of agent.")
 flags.DEFINE_string("exp_name", None, "Name of the experiment for wandb logging.")
 flags.DEFINE_integer("max_traj_length", 1000, "Maximum length of trajectory.")
 flags.DEFINE_integer("seed", 42, "Random seed.")
 flags.DEFINE_bool("save_model", False, "Whether to save model.")
-flags.DEFINE_integer("batch_size", 256, "Batch size.")
+flags.DEFINE_integer("batch_size", 128, "Batch size.")
 flags.DEFINE_integer("critic_actor_ratio", 4, "critic to actor update ratio.")
 
 flags.DEFINE_integer("max_steps", 1000000, "Maximum number of training steps.")
@@ -107,10 +107,10 @@ def actor(agent: DrQAgent, data_store, env, sampling_rng):
 
     client.recv_network_callback(update_params)
 
-    eval_env = gym.make(FLAGS.env)
-    if FLAGS.env == "PandaPickCubeVision-v0":
-        eval_env = SERLObsWrapper(eval_env)
-        eval_env = ChunkingWrapper(eval_env, obs_horizon=1, act_exec_horizon=None)
+    eval_env = gym.make(FLAGS.env, width=112, height=112, cameras=["wrist1", "wrist2"])
+    eval_env = VideoRecorder(eval_env, save_dir="videos", record_every=2, crop_resolution=112, resize_resolution=480, fps=30)
+    eval_env = SERLObsWrapper(eval_env)
+    eval_env = ChunkingWrapper(eval_env, obs_horizon=1, act_exec_horizon=None)
     eval_env = RecordEpisodeStatistics(eval_env)
 
     obs, _ = env.reset()
@@ -320,16 +320,12 @@ def main(_):
     rng = jax.random.PRNGKey(FLAGS.seed)
 
     # create env and load dataset
-    if FLAGS.render:
-        env = gym.make(FLAGS.env, render_mode="human")
-    else:
-        env = gym.make(FLAGS.env)
 
-    if FLAGS.env == "PandaPickCube-v0":
-        env = gym.wrappers.FlattenObservation(env)
-    if FLAGS.env == "PandaPickCubeVision-v0":
-        env = SERLObsWrapper(env)
-        env = ChunkingWrapper(env, obs_horizon=1, act_exec_horizon=None)
+    env = gym.make(FLAGS.env, width=112, height=112, cameras=["wrist1", "wrist2"])
+
+
+    env = SERLObsWrapper(env)
+    env = ChunkingWrapper(env, obs_horizon=1, act_exec_horizon=None)
 
     image_keys = [key for key in env.observation_space.keys() if key != "state"]
 
