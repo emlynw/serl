@@ -66,8 +66,8 @@ flags.DEFINE_string("ip", "localhost", "IP address of the learner.")
 # "small" is a 4 layer convnet, "resnet" and "mobilenet" are frozen with pretrained weights
 flags.DEFINE_string("encoder_type", "resnet-pretrained", "Encoder type.")
 flags.DEFINE_string("demo_path", None, "Path to the demo data.")
-flags.DEFINE_integer("checkpoint_period", 0, "Period to save checkpoints.")
-flags.DEFINE_string("checkpoint_path", None, "Path to save checkpoints.")
+flags.DEFINE_integer("checkpoint_period", 20_000, "Period to save checkpoints.")
+flags.DEFINE_string("checkpoint_path", "/home/emlyn/rl_franka/serl/examples/async_strawb_sim/checkpoints", "Path to save checkpoints.")
 
 flags.DEFINE_boolean(
     "debug", False, "Debug mode."
@@ -108,7 +108,7 @@ def actor(agent: DrQAgent, data_store, env, sampling_rng):
     client.recv_network_callback(update_params)
 
     eval_env = gym.make(FLAGS.env, width=112, height=112, cameras=["wrist1", "wrist2"])
-    eval_env = VideoRecorder(eval_env, save_dir="videos", record_every=2, crop_resolution=112, resize_resolution=480, fps=10)
+    eval_env = VideoRecorder(eval_env, save_dir="green_strawb_reward", record_every=5, crop_resolution=112, resize_resolution=480, fps=10)
     eval_env = SERLObsWrapper(eval_env)
     eval_env = ChunkingWrapper(eval_env, obs_horizon=1, act_exec_horizon=None)
     eval_env = RecordEpisodeStatistics(eval_env)
@@ -303,7 +303,7 @@ def learner(
         if FLAGS.checkpoint_period and update_steps % FLAGS.checkpoint_period == 0:
             assert FLAGS.checkpoint_path is not None
             checkpoints.save_checkpoint(
-                FLAGS.checkpoint_path, agent.state, step=update_steps, keep=20
+                FLAGS.checkpoint_path, agent.state, step=update_steps, overwrite=True, keep=3
             )
 
         pbar.update(len(replay_buffer) - pbar.n)  # update replay buffer bar
