@@ -108,7 +108,7 @@ def actor(agent: DrQAgent, data_store, env, sampling_rng):
     client.recv_network_callback(update_params)
 
     eval_env = gym.make(FLAGS.env, width=112, height=112, cameras=["wrist1", "wrist2"])
-    eval_env = VideoRecorder(eval_env, save_dir="videos", record_every=2, crop_resolution=112, resize_resolution=480, fps=30)
+    eval_env = VideoRecorder(eval_env, save_dir="videos", record_every=2, crop_resolution=112, resize_resolution=480, fps=10)
     eval_env = SERLObsWrapper(eval_env)
     eval_env = ChunkingWrapper(eval_env, obs_horizon=1, act_exec_horizon=None)
     eval_env = RecordEpisodeStatistics(eval_env)
