@@ -10,6 +10,7 @@ from absl import app, flags
 from flax.training import checkpoints
 import cv2
 import os
+import datetime
 
 from typing import Any, Dict, Optional
 import pickle as pkl
@@ -20,7 +21,7 @@ from serl_launcher.agents.continuous.drq import DrQAgent
 from serl_launcher.common.evaluation import evaluate
 from serl_launcher.utils.timer_utils import Timer
 from serl_launcher.wrappers.chunking import ChunkingWrapper
-from serl_launcher.wrappers.wrappers import VideoRecorder
+from serl_launcher.wrappers.wrappers import VideoRecorder, ActionState
 from serl_launcher.utils.train_utils import concat_batches
 
 from agentlace.trainer import TrainerServer, TrainerClient
@@ -67,7 +68,7 @@ flags.DEFINE_string("ip", "localhost", "IP address of the learner.")
 flags.DEFINE_string("encoder_type", "resnet-pretrained", "Encoder type.")
 flags.DEFINE_string("demo_path", None, "Path to the demo data.")
 flags.DEFINE_integer("checkpoint_period", 20_000, "Period to save checkpoints.")
-flags.DEFINE_string("checkpoint_path", "/home/emlyn/rl_franka/serl/examples/async_strawb_sim/checkpoints", "Path to save checkpoints.")
+flags.DEFINE_string("checkpoint_path", "/home/emlyn/rl_franka/serl/examples/async_strawb_sim/checkpoints_5", "Path to save checkpoints.")
 
 flags.DEFINE_boolean(
     "debug", False, "Debug mode."
@@ -108,8 +109,9 @@ def actor(agent: DrQAgent, data_store, env, sampling_rng):
     client.recv_network_callback(update_params)
 
     eval_env = gym.make(FLAGS.env, width=112, height=112, cameras=["wrist1", "wrist2"])
-    eval_env = VideoRecorder(eval_env, save_dir="green_strawb_reward", record_every=5, crop_resolution=112, resize_resolution=480, fps=10)
+    eval_env = VideoRecorder(eval_env, save_dir="discrete_gripper_3", record_every=10, crop_resolution=112, resize_resolution=480, fps=10)
     eval_env = SERLObsWrapper(eval_env)
+    eval_env = ActionState(eval_env)
     eval_env = ChunkingWrapper(eval_env, obs_horizon=1, act_exec_horizon=None)
     eval_env = RecordEpisodeStatistics(eval_env)
 
@@ -306,6 +308,16 @@ def learner(
                 FLAGS.checkpoint_path, agent.state, step=update_steps, overwrite=True, keep=3
             )
 
+        # if FLAGS.checkpoint_period and update_steps % FLAGS.checkpoint_period == 0:
+        #     assert FLAGS.checkpoint_path is not None
+        #     # Get the current date and time
+        #     current_time = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        #     # Update the checkpoint path to include the time and date
+        #     checkpoint_path = os.path.join(FLAGS.checkpoint_path, f"checkpoint_{update_steps}_{current_time}")
+        #     checkpoints.save_checkpoint(
+        #         checkpoint_path, agent.state, step=update_steps, overwrite=True, keep=3
+        #     )
+
         pbar.update(len(replay_buffer) - pbar.n)  # update replay buffer bar
         update_steps += 1
 
@@ -325,6 +337,7 @@ def main(_):
 
 
     env = SERLObsWrapper(env)
+    env = ActionState(env)
     env = ChunkingWrapper(env, obs_horizon=1, act_exec_horizon=None)
 
     image_keys = [key for key in env.observation_space.keys() if key != "state"]

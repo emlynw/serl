@@ -112,7 +112,7 @@ class DrQAgent(SACAgent):
         shared_encoder: bool = True,
         use_proprio: bool = False,
         critic_network_kwargs: dict = {
-            "hidden_dims": [256, 256],
+            "hidden_dims": [512, 256],
         },
         policy_network_kwargs: dict = {
             "hidden_dims": [256, 256],

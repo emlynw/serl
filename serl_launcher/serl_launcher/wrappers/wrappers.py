@@ -252,3 +252,30 @@ class ActionState(gym.Wrapper):
         obs, reward, terminated, truncated, info = self.env.step(action)
         obs[self.state_key] = np.concatenate([obs[self.state_key], action])
         return obs, reward, terminated, truncated, info
+    
+class ActionStateSERL(gym.Wrapper):
+  # Add previous action to the state
+  def __init__(self, env, state_key='state', action_key='action'):
+      super().__init__(env)
+      self.action_key = action_key
+      self.state_key = state_key
+      self.action_dim = env.action_space.shape[0]
+      original_obs_space = self.env.observation_space
+      new_spaces = dict(original_obs_space.spaces)  # Copy the original spaces
+      new_spaces['state_key'][self.action_key] = Box(low=env.action_space.low, high=env.action_space.high, shape=(self.action_dim,), dtype=np.float32) 
+      self.observation_space = gym.spaces.Dict(new_spaces)
+
+      self.action_dim = env.action_space.shape[0]
+      self.observation_space[state_key][action_key] = Box(low=env.action_space.low, high=env.action_space.high, shape=(self.action_dim,), dtype=np.float32)
+
+  def reset(self, seed=None, options=None):
+      obs, info = self.env.reset()
+      action = np.zeros(self.action_dim)
+      obs[self.state_key][self.action_key] = action
+      print(f"obs: {obs['state']}")
+      return obs, info
+
+  def step(self, action):
+      obs, reward, terminated, truncated, info = self.env.step(action)
+      obs[self.state_key][self.action_key] = action
+      return obs, reward, terminated, truncated, info
