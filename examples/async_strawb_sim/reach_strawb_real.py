@@ -78,8 +78,6 @@ def main():
                 seed=key,
                 deterministic=True,  # Evaluation mode should be deterministic
             )
-            action = np.asarray(jax.device_get(action)).copy()
-            action[2] += 0.02
             print(action)
             # Perform the action in the environment
             obs, reward, terminated, truncated, info = env.step(action)
