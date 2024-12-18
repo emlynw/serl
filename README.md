@@ -10,6 +10,10 @@
 
 **Webpage: [https://serl-robot.github.io/](https://serl-robot.github.io/)**
 
+
+**Also check out our new project HIL-SERL: [https://hil-serl.github.io/](https://hil-serl.github.io/)**
+
+
 SERL provides a set of libraries, env wrappers, and examples to train RL policies for robotic manipulation tasks. The following sections describe how to use SERL. We will illustrate the usage with examples.
 
 🎬: [SERL video](https://www.youtube.com/watch?v=Um4CjBmHdcw), [additional video](https://www.youtube.com/watch?v=17NrtKHdPDw) on sample efficient RL.
@@ -49,7 +53,7 @@ We fixed a major issue in the intervention action frame. See release [v0.1.1](ht
 
     - For GPU:
         ```bash
-        pip install --upgrade "jax[cuda12]==0.4.28" -f https://storage.googleapis.com/jax-releases/jax_cuda_releases.html
+        pip install --upgrade "jax[cuda12_pip]==0.4.35" -f https://storage.googleapis.com/jax-releases/jax_cuda_releases.html
         ```
 
     - For TPU
